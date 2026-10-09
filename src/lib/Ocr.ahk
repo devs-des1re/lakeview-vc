@@ -25,12 +25,12 @@ class Ocr {
         args .= ' --keys=' a.Keys ' --image="' imagePath '"'
 
         out := this.RunEngine(args)
-        json := this.ExtractJson(out)
-        if (json = "")
+        jsonText := this.ExtractJson(out)
+        if (jsonText = "")
             throw Error("OCR engine returned no result. Output: " this.Trim(out))
 
         try
-            res := JSON.parse(json)
+            res := JSON.parse(jsonText)
         catch as e
             throw Error("Failed to parse OCR output: " e.Message)
 
