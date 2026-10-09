@@ -48,6 +48,20 @@ class Ui {
         }
 
         g.Show("w820 h560")
+        this.SetWindowIcon(g)
+    }
+
+    ; Sets the window icon from icon.ico (small + big).
+    static SetWindowIcon(g) {
+        if (Paths.IconFile = "" || !FileExist(Paths.IconFile))
+            return
+        ; 0 = ICON_SMALL, 1 = ICON_BIG. Load both sizes from the .ico.
+        hSmall := DllCall("LoadImage", "ptr", 0, "str", Paths.IconFile, "uint", 1, "int", 16, "int", 16, "uint", 0x10, "ptr")
+        hBig := DllCall("LoadImage", "ptr", 0, "str", Paths.IconFile, "uint", 1, "int", 32, "int", 32, "uint", 0x10, "ptr")
+        if hSmall
+            SendMessage(0x80, 0, hSmall, , "ahk_id " g.Hwnd)  ; WM_SETICON ICON_SMALL
+        if hBig
+            SendMessage(0x80, 1, hBig, , "ahk_id " g.Hwnd)    ; WM_SETICON ICON_BIG
     }
 
     static Hide() {

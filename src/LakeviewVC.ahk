@@ -204,6 +204,8 @@ Hotkeys.Register()
 
 ; --- tray --------------------------------------------------------------------
 A_IconTip := "LakeviewVC"
+if (Paths.IconFile != "" && FileExist(Paths.IconFile))
+    TraySetIcon(Paths.IconFile)
 Tray := A_TrayMenu
 Tray.Delete()
 Tray.Add("Open GUI", (*) => App.OpenGui())

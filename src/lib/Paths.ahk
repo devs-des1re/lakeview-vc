@@ -14,9 +14,22 @@ class Paths {
     static EngineExe  := Paths.EngineDir != "" ? Paths.EngineDir "\RapidOCR-json.exe" : ""
     static DictsDir   := Paths.EngineDir != "" ? Paths.EngineDir "\dicts" : ""
 
+    static IconFile   := Paths.FindIcon()
+
     ; Hugging Face mirror of the PaddleOCR/RapidOCR model files. SHA-256 of the
     ; det/v4-rec/cls files was verified to match the official RapidOCR-json release.
     static ModelsBaseUrl := "https://huggingface.co/SWHL/RapidOCR/resolve/main"
+
+    ; Locate icon.ico whether running from source (src/lib) or an installed exe.
+    static FindIcon() {
+        rels := ["\icon.ico", "\..\icon.ico", "\..\..\icon.ico"]
+        for rel in rels {
+            f := A_ScriptDir rel
+            if FileExist(f)
+                return f
+        }
+        return ""
+    }
 
     ; Locate engines\RapidOCR-json whether running from source (src/lib) or a
     ; compiled exe at the repository/install root.

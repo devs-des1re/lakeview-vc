@@ -84,6 +84,18 @@ body {
     -webkit-app-region: drag;
 }
 
+.titlebar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.titlebar-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
 .titlebar-title {
     font-size: 12.5px;
     font-weight: 500;
@@ -427,6 +439,11 @@ body.ahk-maximized .tb-ico-restore { display: block; }
     align-items: center;
     gap: 14px;
     flex-shrink: 0;
+}
+
+.footer-actions .btn {
+    padding: 5px 16px;
+    line-height: 1.3;
 }
 
 .status {
