@@ -105,7 +105,7 @@ class Models {
             tmp := dest ".part"
             if FileExist(tmp)
                 FileDelete(tmp)
-            Download(Paths.ModelsBaseUrl f.Url, tmp, this.MakeProgress(progress, f.Name, idx - 1, total))
+            Download(Paths.ModelsBaseUrl f.Url, tmp)
             got := this.Sha256(tmp)
             if (got != f.Sha) {
                 FileDelete(tmp)
@@ -128,22 +128,22 @@ class Models {
         return true
     }
 
-    static MakeProgress(progress, name, base, total) {
-        return (downloaded, totalBytes, *) => this.Report(progress,
-            Format("Downloading {1} ({2}/{3}) - {4}%", name, base + 1, total,
-                totalBytes ? Floor(downloaded / totalBytes * 100) : 0), base, total)
-    }
-
     static Report(progress, text, done, total) {
         if (progress is Func)
             progress(text, done, total)
     }
 
     static Sha256(path) {
-        out := ""
-        RunWait('certutil -hashfile "' path '" SHA256', , "Hide", &out)
-        if RegExMatch(out, "i)\b([0-9a-f]{64})\b", &m)
-            return StrLower(m[1])
+        tmp := A_Temp "\LakeviewVC_hash_" A_TickCount ".txt"
+        try {
+            RunWait('cmd /c certutil -hashfile "' path '" SHA256 > "' tmp '" 2>&1', , "Hide")
+            out := FileExist(tmp) ? FileRead(tmp) : ""
+            if RegExMatch(out, "i)\b([0-9a-f]{64})\b", &m)
+                return StrLower(m[1])
+        } finally {
+            if FileExist(tmp)
+                FileDelete(tmp)
+        }
         return ""
     }
 
