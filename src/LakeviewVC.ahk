@@ -20,7 +20,10 @@ Persistent
 #Include %A_ScriptDir%\lib\RobloxApi.ahk
 #Include %A_ScriptDir%\lib\Resolver.ahk
 #Include %A_ScriptDir%\lib\RobloxWindow.ahk
+#Include %A_ScriptDir%\lib\Staff.ahk
+#Include %A_ScriptDir%\lib\Gui.ahk
 
+; --- pipeline ----------------------------------------------------------------
 class Pipeline {
     ; Full normal flow: capture -> OCR -> resolve -> send ";vc {username}".
     static RunVc() {
@@ -31,13 +34,24 @@ class Pipeline {
                 App.Notify("LakeviewVC", "No Roblox username detected.")
                 return
             }
-
             command := ";vc " target
             Logger.Action("Sending: " command)
             RobloxWindow.SendCommand(command)
-            App.SetStatus("Sent: " command)
+            GuiApp.SetStatus("Sent: " command)
         } catch as e {
             Logger.Exception(e, "RunVc")
+            App.Notify("LakeviewVC error", e.Message)
+        }
+    }
+
+    ; Full staff flow: capture -> OCR -> resolve -> choose VC -> send log.
+    static RunStaff() {
+        try {
+            Logger.Info("Staff hotkey triggered.")
+            target := this.Detect("staff")
+            Staff.RunWithUsername(target)
+        } catch as e {
+            Logger.Exception(e, "RunStaff")
             App.Notify("LakeviewVC error", e.Message)
         }
     }
@@ -84,39 +98,94 @@ class Pipeline {
     }
 }
 
-class App {
-    static StatusText := "Idle"
+; --- hotkey management -------------------------------------------------------
+class Hotkeys {
+    static Registered := []
 
+    ; Context callback: hotkeys only fire while Roblox is focused.
+    static RobloxActive(*) {
+        return RobloxWindow.IsActive()
+    }
+
+    static Register() {
+        ; Re-registering can happen from a GUI thread, so set context explicitly.
+        HotIf(Hotkeys.RobloxActive)
+
+        ; Clear previous registrations.
+        for hk in this.Registered {
+            try Hotkey hk, "Off"
+        }
+        this.Registered := []
+
+        vc := Config.Get("General", "VcHotkey")
+        if (vc != "") {
+            try {
+                Hotkey vc, (*) => Pipeline.RunVc(), "On"
+                this.Registered.Push(vc)
+                Logger.Info("Registered VC hotkey: " vc)
+            } catch as e {
+                Logger.Exception(e, "Register VC hotkey")
+                App.Notify("LakeviewVC", "Could not register VC hotkey: " vc)
+            }
+        }
+
+        if Staff.IsEnabled() {
+            staff := Config.Get("Staff", "StaffHotkey")
+            if (staff != "") {
+                try {
+                    Hotkey staff, (*) => Pipeline.RunStaff(), "On"
+                    this.Registered.Push(staff)
+                    Logger.Info("Registered staff hotkey: " staff)
+                } catch as e {
+                    Logger.Exception(e, "Register staff hotkey")
+                    App.Notify("LakeviewVC", "Could not register staff hotkey: " staff)
+                }
+            }
+        }
+
+        HotIf()  ; restore global context
+    }
+}
+
+; --- small app helpers -------------------------------------------------------
+class App {
     static Notify(title, message) {
         TrayTip(message, title, 0x1)
     }
 
     static SetStatus(text) {
-        App.StatusText := text
+        GuiApp.SetStatus(text)
+    }
+
+    static OpenGui() {
+        GuiApp.Open()
+    }
+
+    static Quit() {
+        Logger.Info("LakeviewVC exiting.")
+        ExitApp()
     }
 }
 
-; --- settings / logging init -------------------------------------------------
+; --- startup -----------------------------------------------------------------
 Paths.EnsureDataDirs()
 Config.Load()
 Logger.Enabled := Config.GetBool("Settings", "Logging")
 Logger.Info("LakeviewVC started.")
 Logger.Info("Engine: " (Paths.EngineExe != "" ? Paths.EngineExe : "<not found>"))
 
-; --- hotkeys (only while Roblox is focused) ----------------------------------
-#HotIf RobloxWindow.IsActive()
-Hotkey Config.Get("General", "VcHotkey"), (*) => Pipeline.RunVc()
-#HotIf
+; Hotkeys are scoped to the Roblox window so typing elsewhere never triggers.
+Hotkeys.Register()
 
 ; --- tray --------------------------------------------------------------------
 A_IconTip := "LakeviewVC"
 Tray := A_TrayMenu
 Tray.Delete()
-Tray.Add("Open GUI", (*) => App.Notify("LakeviewVC", "GUI arrives in Phase 3."))
-Tray.Add("Open Data Folder", (*) => Run(Paths.AppDataDir))
+Tray.Add("Open GUI", (*) => App.OpenGui())
 Tray.Add()
-Tray.Add("Exit", (*) => ExitApp())
+Tray.Add("Close App", (*) => App.Quit())
 Tray.Default := "Open GUI"
+Tray.ClickCount := 1  ; single left-click opens the GUI
 
 if !Paths.EngineExe
     App.Notify("LakeviewVC", "OCR engine not found under engines\RapidOCR-json.")
