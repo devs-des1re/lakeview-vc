@@ -103,14 +103,7 @@ class Models {
             }
             this.Report(progress, "Downloading " f.Name " (" idx "/" total ")", idx - 1, total)
             tmp := dest ".part"
-            if FileExist(tmp)
-                FileDelete(tmp)
-            Download(Paths.ModelsBaseUrl f.Url, tmp)
-            got := this.Sha256(tmp)
-            if (got != f.Sha) {
-                FileDelete(tmp)
-                throw Error("Checksum mismatch for " f.Name " (got " got ")")
-            }
+            this.DownloadVerified(f, tmp, progress, f.Name, idx - 1, total)
             if FileExist(dest)
                 FileDelete(dest)
             FileMove(tmp, dest)
@@ -131,6 +124,34 @@ class Models {
     static Report(progress, text, done, total) {
         if (progress is Func)
             progress(text, done, total)
+    }
+
+    ; Downloads a single file into `tmp`, verifying its SHA-256. Retries a few
+    ; times on network/checksum failure before giving up. Throws on final fail.
+    static DownloadVerified(f, tmp, progress, name, base, total) {
+        attempts := 3
+        Loop attempts {
+            attempt := A_Index
+            try {
+                if FileExist(tmp)
+                    FileDelete(tmp)
+                Download(Paths.ModelsBaseUrl f.Url, tmp)
+                got := this.Sha256(tmp)
+                if (got = f.Sha)
+                    return true
+                Logger.Warn("Checksum mismatch for " name " (attempt " attempt "/" attempts ").")
+            } catch as e {
+                Logger.Warn("Download of " name " failed (attempt " attempt "/" attempts "): " e.Message)
+            }
+            this.Report(progress, Format("Retrying {1} ({2}/{3})...", name, attempt, attempts), base, total)
+            Sleep 750 * attempt
+        }
+        try {
+            if FileExist(tmp)
+                FileDelete(tmp)
+        } catch {
+        }
+        throw Error("Could not download a verified copy of " name " from the model mirror.")
     }
 
     static Sha256(path) {

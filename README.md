@@ -21,7 +21,7 @@ public APIs, and sends the appropriate chat command.
 - Tabbed, dark UI for hotkeys, capture size, model choice, staff abbreviations
   and settings.
 - Minimizes to the system tray; tray left-click reopens, right-click offers
-  *Open GUI* and *Close App*.
+  _Open GUI_ and _Close App_.
 - Configuration and logs saved to `%APPDATA%\LakeviewVC`.
 
 ## Requirements
@@ -34,17 +34,11 @@ public APIs, and sends the appropriate chat command.
 1. Install AutoHotkey v2.
 2. Run `src/LakeviewVC.ahk`.
 3. On first run, choose a model in the **Settings** tab — the selected model is
-   downloaded to `%APPDATA%\LakeviewVC\models`.
+   downloaded to `%APPDATA%\LakeviewVC\models`. Nothing is downloaded until you
+   press **Save**, so the base download stays small.
 
-## Data locations
-
-| Path | Contents |
-| --- | --- |
-| `%APPDATA%\LakeviewVC\config.ini` | Settings |
-| `%APPDATA%\LakeviewVC\logs\*.log` | Action / capture / send logs |
-| `%APPDATA%\LakeviewVC\logs\errors.log` | Errors for debugging |
-| `%APPDATA%\LakeviewVC\captures\*.png` | Saved captures (optional) |
-| `%APPDATA%\LakeviewVC\models\` | Downloaded OCR models |
+Hotkeys only fire while the Roblox window (`RobloxPlayerBeta.exe`) is focused,
+so typing anywhere else never triggers a capture.
 
 ## License
 

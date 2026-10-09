@@ -36,7 +36,11 @@ class Pipeline {
             }
             command := ";vc " target
             Logger.Action("Sending: " command)
-            RobloxWindow.SendCommand(command)
+            if !RobloxWindow.SendCommand(command) {
+                Logger.Err("Send did not complete: " command)
+                App.Notify("LakeviewVC", "Could not send the chat command.")
+                return
+            }
             GuiApp.SetStatus("Sent: " command)
         } catch as e {
             Logger.Exception(e, "RunVc")
@@ -64,36 +68,40 @@ class Pipeline {
         height := Config.GetInt("General", "CaptureHeight")
         model := Config.Get("Settings", "Model")
 
+        if !Models.IsInstalled(model)
+            throw Error("OCR model '" model "' is not installed. Open the GUI and press Save to download it.")
+
         stamp := FormatTime(, "yyyyMMdd_HHmmss")
         png := Paths.CapturesDir "\" stamp "_" context ".png"
 
-        Logger.Info(Format("Capture {1}x{2} at mouse for '{3}'.", width, height, context))
-        Capture.AtMouse(width, height, png)
+        keep := Config.GetBool("Settings", "SaveCaptures")
+        try {
+            Logger.Info(Format("Capture {1}x{2} at mouse for '{3}'.", width, height, context))
+            Capture.AtMouse(width, height, png)
 
-        text := Ocr.RecognizeText(png, model)
-        Logger.Info("OCR text: " (text != "" ? text : "<empty>"))
+            text := Ocr.RecognizeText(png, model)
+            Logger.Info("OCR text: " (text != "" ? text : "<empty>"))
 
-        if (text = "") {
-            this.CleanupCapture(png)
-            return ""
-        }
+            if (text = "")
+                return ""
 
-        target := Resolver.Resolve(text)
-        this.CleanupCapture(png)
+            target := Resolver.Resolve(text)
+            if (target = "") {
+                Logger.Warn("Could not resolve OCR text: " text)
+                return ""
+            }
 
-        if (target = "") {
-            Logger.Warn("Could not resolve OCR text: " text)
-            return ""
-        }
-
-        Logger.Info(Format("Resolved '{1}' -> {2} ({3}).", text, target.Name, target.Method))
-        return target.Name
-    }
-
-    static CleanupCapture(path) {
-        if !Config.GetBool("Settings", "SaveCaptures") {
-            try
-                FileDelete(path)
+            Logger.Info(Format("Resolved '{1}' -> {2} ({3}).", text, target.Name, target.Method))
+            return target.Name
+        } finally {
+            if (!keep) {
+                try {
+                    if FileExist(png)
+                        FileDelete(png)
+                } catch {
+                    ; Best-effort cleanup.
+                }
+            }
         }
     }
 }

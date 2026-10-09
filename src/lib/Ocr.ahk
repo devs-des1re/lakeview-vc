@@ -111,14 +111,24 @@ class Ocr {
     ; Runs the engine with redirect of stdout to a temp file (RunWait's fourth
     ; parameter is the PID, not captured output) and returns the file contents.
     static RunEngine(args) {
-        tmp := A_Temp "\LakeviewVC_ocr_" A_TickCount ".txt"
+        if !FileExist(Paths.EngineExe)
+            throw Error("OCR engine not found: " Paths.EngineExe)
+
+        tmp := A_Temp "\LakeviewVC_ocr_" A_TickCount "_" Random(1000, 9999) ".txt"
+        ; Quote the whole command so paths with spaces still resolve.
         cmd := 'cmd /c ""' Paths.EngineExe '" ' args ' > "' tmp '" 2>&1"'
         try {
             RunWait(cmd, , "Hide")
-            return FileExist(tmp) ? FileRead(tmp, "UTF-8") : ""
+            if !FileExist(tmp)
+                throw Error("OCR engine produced no output (it may have crashed).")
+            return FileRead(tmp, "UTF-8")
         } finally {
-            if FileExist(tmp)
-                FileDelete(tmp)
+            try {
+                if FileExist(tmp)
+                    FileDelete(tmp)
+            } catch {
+                ; Temp cleanup is best-effort.
+            }
         }
     }
 

@@ -65,7 +65,8 @@ class Staff {
         lines := ""
         for a in abbrs
             lines .= a.Key ". " a.Abbr "`n"
-        prompt.Add("Text",, "Press a number to log the VC:`n`n" RTrim(lines, "`n"))
+        prompt.BackColor := 0x1E1E1E
+        prompt.Add("Text", "cWhite", "Press a number to log the VC:`n`n" RTrim(lines, "`n"))
         prompt.Add("Text", "cGray", "Esc to cancel.")
         prompt.Show()
         WinActivate("Select VC")

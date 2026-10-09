@@ -15,10 +15,18 @@ class Capture {
         CoordMode "Mouse", "Screen"
         MouseGetPos(&mx, &my)
 
+        bounds := this.VirtualBounds()
+        if (bounds.W <= 0 || bounds.H <= 0)
+            throw Error("Could not determine the screen bounds.")
+
+        ; Never exceed the virtual desktop, and never allow empty regions.
+        width := Min(Round(width), bounds.W)
+        height := Min(Round(height), bounds.H)
+        width := Max(width, 1)
+        height := Max(height, 1)
+
         x := mx - (width // 2)
         y := my - (height // 2)
-
-        bounds := this.VirtualBounds()
         x := Max(bounds.X, Min(x, bounds.X + bounds.W - width))
         y := Max(bounds.Y, Min(y, bounds.Y + bounds.H - height))
 

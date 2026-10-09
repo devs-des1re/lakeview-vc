@@ -37,29 +37,33 @@ class RobloxWindow {
     static SendCommand(text) {
         if !this.Activate()
             throw Error("Roblox window not found or could not be activated.")
+        if !this.IsActive()
+            throw Error("Roblox window could not be focused.")
 
         saved := this.SaveClipboard()
-        sent := false
+        SetKeyDelay(30)
         try {
+            ; Ensure any previously-open chat/menu is dismissed first.
+            SendEvent "{Escape}"
+            Sleep 80
+
             ; Open chat and clear the auto-inserted "/".
             SendEvent "/"
-            Sleep 60
+            Sleep 80
             SendEvent "{Backspace}"
-            Sleep 40
+            Sleep 50
 
             A_Clipboard := text
-            if !ClipWait(2) {
+            if !ClipWait(3)
                 throw Error("Clipboard did not receive the command text.")
-            }
             SendEvent "^v"
-            Sleep 80
+            Sleep 100
             SendEvent "{Enter}"
-            sent := true
-        } finally {
             Sleep 60
+            return true
+        } finally {
             this.RestoreClipboard(saved)
         }
-        return sent
     }
 
     ; Snapshots every clipboard format so images/files survive a command send.
