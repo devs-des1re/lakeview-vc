@@ -12,6 +12,7 @@ Persistent
 
 #Include %A_ScriptDir%\lib\Paths.ahk
 #Include %A_ScriptDir%\..\vendor\JSON.ahk
+#Include %A_ScriptDir%\..\vendor\webview\WebViewToo.ahk
 #Include %A_ScriptDir%\lib\Logger.ahk
 #Include %A_ScriptDir%\lib\Config.ahk
 #Include %A_ScriptDir%\lib\Capture.ahk
@@ -21,7 +22,7 @@ Persistent
 #Include %A_ScriptDir%\lib\Resolver.ahk
 #Include %A_ScriptDir%\lib\RobloxWindow.ahk
 #Include %A_ScriptDir%\lib\Staff.ahk
-#Include %A_ScriptDir%\lib\Gui.ahk
+#Include %A_ScriptDir%\lib\Ui.ahk
 
 ; --- pipeline ----------------------------------------------------------------
 class Pipeline {
@@ -41,7 +42,7 @@ class Pipeline {
                 App.Notify("LakeviewVC", "Could not send the chat command.")
                 return
             }
-            GuiApp.SetStatus("Sent: " command)
+            App.SetStatus("Sent: " command)
         } catch as e {
             Logger.Exception(e, "RunVc")
             App.Notify("LakeviewVC error", e.Message)
@@ -177,11 +178,12 @@ class App {
     }
 
     static SetStatus(text) {
-        GuiApp.SetStatus(text)
+        if Ui.Exists()
+            Ui.PushStatus(text, "")
     }
 
     static OpenGui() {
-        GuiApp.Open()
+        Ui.Open()
     }
 
     static Quit() {

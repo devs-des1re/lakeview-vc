@@ -20,8 +20,8 @@ public APIs, and sends the appropriate chat command.
 - Chat commands:
   - Normal: `;vc {username}`
   - Staff: `:log vc {username} {selection}`
-- Tabbed, dark UI for hotkeys, capture size, model choice, staff abbreviations
-  and settings.
+- Dark HTML UI (AutoHotkey + WebView2) for hotkeys, capture size, model choice,
+  staff abbreviations and settings.
 - Minimizes to the system tray; tray left-click reopens, right-click offers
   _Open GUI_ and _Close App_.
 - Configuration and logs saved to `%APPDATA%\LakeviewVC`.
@@ -41,6 +41,9 @@ public APIs, and sends the appropriate chat command.
 
 Hotkeys only fire while the Roblox window (`RobloxPlayerBeta.exe`) is focused,
 so typing anywhere else never triggers a capture.
+
+The UI is an HTML page hosted in a native window via WebView2 (Edge), bridged to
+AutoHotkey. WebView2 is bundled with Windows 10/11; no browser install needed.
 
 ## License
 
