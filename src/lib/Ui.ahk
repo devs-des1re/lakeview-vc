@@ -8,7 +8,6 @@
 
 class Ui {
     static Window := ""
-    static State := ""
 
     static Open() {
         if (this.Window != "") {
@@ -34,8 +33,7 @@ class Ui {
         this.Window := g
 
         g.AddCallbackToScript("GetState", (*) => this.GetStateJson())
-        g.AddCallbackToScript("Save", (wv, json) => this.OnSave(json))
-        g.AddCallbackToScript("TestCapture", (*) => this.OnTestCapture())
+        g.AddCallbackToScript("Save", (wv, payload) => this.OnSave(payload))
         g.AddCallbackToScript("OpenDataFolder", (*) => (Run(Paths.AppDataDir), "Opened."))
         g.AddCallbackToScript("ResetDefaults", (*) => this.OnReset())
 
@@ -48,7 +46,7 @@ class Ui {
             g.Navigate("index.html")
         }
 
-        g.Show("w860 h620")
+        g.Show("w820 h560")
     }
 
     static Hide() {
@@ -69,44 +67,85 @@ class Ui {
 
     static BuildState() {
         abbrs := []
-        Loop 9
-            abbrs.Push(Config.GetAbbr(A_Index))
+        Loop 9 {
+            a := Config.GetAbbr(A_Index)
+            if (a != "")
+                abbrs.Push(a)
+        }
 
-        models := []
+        modelList := []
         for key in Models.Keys() {
             p := Models.Get(key)
-            models.Push({ key: key, label: p.Label, desc: p.Description })
+            modelList.Push({ key: key, label: p.Label, desc: p.Description })
         }
 
         return {
             vcHotkey: Config.Get("General", "VcHotkey"),
             staffHotkey: Config.Get("Staff", "StaffHotkey"),
-            captureWidth: Config.GetInt("General", "CaptureWidth"),
-            captureHeight: Config.GetInt("General", "CaptureHeight"),
-            captureScale: Config.GetInt("General", "CaptureScale"),
             staffEnabled: Config.GetBool("Staff", "Enabled"),
             saveCaptures: Config.GetBool("Settings", "SaveCaptures"),
             logging: Config.GetBool("Settings", "Logging"),
             model: Config.Get("Settings", "Model"),
             abbrs: abbrs,
-            models: models,
-            engineOk: Paths.EngineExe != ""
+            models: modelList,
+            engineOk: Paths.EngineExe != "",
+            debug: this.BuildDebug()
         }
     }
 
-    static OnSave(json) {
+    static BuildDebug() {
+        return {
+            version: "v0.1",
+            os: this.OsVersion(),
+            ahk: A_AhkVersion,
+            webview2: this.WebView2Version(),
+            model: Config.Get("Settings", "Model"),
+            engine: Paths.EngineExe != "" ? "found" : "missing",
+            dataDir: Paths.AppDataDir
+        }
+    }
+
+    static OsVersion() {
         try {
-            state := JSON.parse(json)
+            v := RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")
+            build := RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber")
+            return v " (build " build ")"
+        } catch {
+            return "Windows"
+        }
+    }
+
+    static WebView2Version() {
+        for key in ["HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+                  , "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+                  , "HKCU\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"] {
+            try {
+                v := RegRead(key, "pv")
+                if (v != "")
+                    return v
+            }
+        }
+        return "unknown"
+    }
+
+    static OnSave(jsonText) {
+        try {
+            ; Parse as objects (not Maps) so property access works.
+            state := JSON.parse(jsonText, false, false)
 
             Config.Set("General", "VcHotkey", this.CleanHotkey(state.vcHotkey))
-            Config.Set("General", "CaptureWidth", this.Positive(state.captureWidth, 420))
-            Config.Set("General", "CaptureHeight", this.Positive(state.captureHeight, 110))
-            Config.Set("General", "CaptureScale", Max(1, Min(4, this.Positive(state.captureScale, 2))))
-
             Config.Set("Staff", "Enabled", state.staffEnabled ? 1 : 0)
             Config.Set("Staff", "StaffHotkey", this.CleanHotkey(state.staffHotkey))
+
             Loop 9
-                Config.SetAbbr(A_Index, Trim(state.abbrs[A_Index] != "" ? state.abbrs[A_Index] : ""))
+                Config.SetAbbr(A_Index, "")
+
+            abbrs := state.abbrs
+            if (Type(abbrs) = "Array") {
+                Limit := Min(9, abbrs.Length)
+                Loop Limit
+                    Config.SetAbbr(A_Index, Trim(abbrs[A_Index]))
+            }
 
             model := Models.Presets.Has(state.model) ? state.model : Models.DefaultKey
             Config.Set("Settings", "Model", model)
@@ -135,42 +174,6 @@ class Ui {
             Logger.Exception(e, "Ui.OnSave")
             this.PushStatus("Save failed: " e.Message, "err")
             return "Save failed."
-        }
-    }
-
-    static OnTestCapture() {
-        try {
-            model := Config.Get("Settings", "Model")
-            width := Config.GetInt("General", "CaptureWidth")
-            height := Config.GetInt("General", "CaptureHeight")
-            scale := Config.GetInt("General", "CaptureScale")
-            Paths.EnsureDataDirs()
-            png := Paths.CapturesDir "\test_" FormatTime(, "yyyyMMdd_HHmmss") ".png"
-            Capture.AtMouse(width, height, png, scale)
-            items := Ocr.Recognize(png, model)
-            if !Config.GetBool("Settings", "SaveCaptures")
-                try FileDelete(png)
-
-            if (items.Length = 0) {
-                this.PushStatus("Test capture: no text detected.", "err")
-                return "No text detected."
-            }
-
-            raw := ""
-            for it in items
-                raw .= (raw = "" ? "" : ", ") "'" it.Text "'"
-
-            target := Resolver.ResolveItems(items)
-            if (target = "") {
-                this.PushStatus("Test capture: detected " raw " but no username resolved.", "err")
-                return "No username resolved."
-            }
-            this.PushStatus("Test capture: " raw " -> " target.Name, "ok")
-            return "Resolved: " target.Name
-        } catch as e {
-            Logger.Exception(e, "Ui.OnTestCapture")
-            this.PushStatus("Test capture failed: " e.Message, "err")
-            return "Test failed."
         }
     }
 
@@ -203,10 +206,5 @@ class Ui {
 
     static CleanHotkey(value) {
         return (value = "" || value = "Press keys…") ? "" : Trim(value)
-    }
-
-    static Positive(value, fallback) {
-        n := value + 0
-        return (n > 0) ? n : fallback
     }
 }

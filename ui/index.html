@@ -10,7 +10,6 @@
     <div class="app">
         <aside class="sidebar">
             <div class="brand">
-                <span class="brand-mark"></span>
                 <span class="brand-name">LakeviewVC</span>
             </div>
             <nav class="nav" id="nav">
@@ -21,51 +20,20 @@
             </nav>
             <div class="sidebar-foot">
                 <span class="engine-dot" id="engine-dot"></span>
-                <span id="engine-label">Checking engine…</span>
+                <span id="engine-label">Checking…</span>
             </div>
         </aside>
 
         <main class="main">
-            <header class="main-head">
-                <h1 class="page-title" id="page-title">General</h1>
-                <p class="page-sub" id="page-sub">Normal VC capture settings.</p>
-            </header>
-
             <section class="page is-active" data-page="general">
                 <div class="card">
                     <label class="card-title" for="vcHotkey">VC hotkey</label>
-                    <p class="hint">Sends <code>;vc {username}</code> to Roblox chat.</p>
+                    <p class="hint">Sends <code>;vc {username}</code> to Roblox chat. Works only while Roblox is focused.</p>
                     <input class="field field-hk" id="vcHotkey" type="text" readonly data-hotkey>
-                </div>
-
-                <div class="card">
-                    <label class="card-title">Capture area</label>
-                    <p class="hint">Pixels captured around the mouse cursor, upscaled before OCR.</p>
-                    <div class="row">
-                        <div class="mini">
-                            <span class="mini-label">Width</span>
-                            <input class="field" id="captureWidth" type="number" min="1" max="4000">
-                        </div>
-                        <div class="mini">
-                            <span class="mini-label">Height</span>
-                            <input class="field" id="captureHeight" type="number" min="1" max="4000">
-                        </div>
-                        <div class="mini">
-                            <span class="mini-label">Upscale</span>
-                            <input class="field" id="captureScale" type="number" min="1" max="4">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <button class="btn" id="test-capture">Test capture</button>
-                    <p class="hint">Hover a Roblox nametag, then test. Runs OCR without sending anything.</p>
                 </div>
             </section>
 
             <section class="page" data-page="staff">
-                <div class="notice">Only useful for staff for Lakeview.</div>
-
                 <div class="card">
                     <label class="switch">
                         <input type="checkbox" id="staffEnabled">
@@ -76,21 +44,22 @@
 
                 <div class="card">
                     <label class="card-title" for="staffHotkey">Staff hotkey</label>
-                    <p class="hint">Sends <code>:log vc {username} {selection}</code> to Roblox chat.</p>
+                    <p class="hint">Sends <code>:log vc {username} {selection}</code>. After pressing it, pick a VC with 1-9.</p>
                     <input class="field field-hk" id="staffHotkey" type="text" readonly data-hotkey>
                 </div>
 
                 <div class="card">
                     <label class="card-title">Abbreviations</label>
-                    <p class="hint">After the staff hotkey, press a number 1-9 to pick the VC.</p>
-                    <div class="abbr-grid" id="abbr-grid"></div>
+                    <p class="hint">Numbered 1-9, in order. Add up to nine.</p>
+                    <div class="abbr-list" id="abbr-list"></div>
+                    <button class="btn btn-sm" id="abbr-add">Add abbreviation</button>
                 </div>
             </section>
 
             <section class="page" data-page="settings">
                 <div class="card">
                     <label class="card-title">OCR model</label>
-                    <p class="hint">The selected model is downloaded on save if not already present.</p>
+                    <p class="hint">Downloaded on save if not already present.</p>
                     <div class="models" id="models"></div>
                 </div>
 
@@ -115,16 +84,17 @@
 
             <section class="page" data-page="about">
                 <div class="card">
-                    <label class="card-title">LakeviewVC v0.1</label>
-                    <p class="hint">Reads a Roblox username from the screen with offline OCR, resolves it to a real username and sends a chat command.</p>
-                    <p class="hint">OCR engine: RapidOCR-json (MIT). License: MIT.</p>
+                    <label class="card-title">Debug info</label>
+                    <p class="hint">Basic environment and status details.</p>
+                    <dl class="kv" id="about-info"></dl>
+                    <button class="btn btn-sm" id="copy-debug">Copy to clipboard</button>
                 </div>
             </section>
         </main>
     </div>
 
     <footer class="footer">
-        <span>LakeviewVC is an independent tool and is not affiliated with, endorsed by, or associated with Lakeview City RP or Roblox Corporation.</span>
+        <span class="footer-note">Not affiliated with Roblox or Lakeview City RP.</span>
         <div class="footer-actions">
             <span class="status" id="status">Ready.</span>
             <button class="btn btn-primary" id="save">Save</button>
