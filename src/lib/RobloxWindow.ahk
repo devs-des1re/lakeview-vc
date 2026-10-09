@@ -43,21 +43,18 @@ class RobloxWindow {
         saved := this.SaveClipboard()
         SetKeyDelay(30)
         try {
-            ; Ensure any previously-open chat/menu is dismissed first.
-            SendEvent "{Escape}"
-            Sleep 80
-
-            ; Open chat and clear the auto-inserted "/".
+            ; "/" opens the chat box and Roblox pre-fills a "/". Remove it so
+            ; the pasted command (";vc ..." / ":log vc ...") is sent verbatim.
             SendEvent "/"
-            Sleep 80
+            Sleep 100
             SendEvent "{Backspace}"
-            Sleep 50
+            Sleep 60
 
             A_Clipboard := text
             if !ClipWait(3)
                 throw Error("Clipboard did not receive the command text.")
             SendEvent "^v"
-            Sleep 100
+            Sleep 120
             SendEvent "{Enter}"
             Sleep 60
             return true
