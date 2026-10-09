@@ -138,15 +138,15 @@ class Hotkeys {
         }
 
         if Staff.IsEnabled() {
-            staff := Config.Get("Staff", "StaffHotkey")
-            if (staff != "") {
+            staffHk := Config.Get("Staff", "StaffHotkey")
+            if (staffHk != "") {
                 try {
-                    Hotkey staff, (*) => Pipeline.RunStaff(), "On"
-                    this.Registered.Push(staff)
-                    Logger.Info("Registered staff hotkey: " staff)
+                    Hotkey staffHk, (*) => Pipeline.RunStaff(), "On"
+                    this.Registered.Push(staffHk)
+                    Logger.Info("Registered staff hotkey: " staffHk)
                 } catch as e {
                     Logger.Exception(e, "Register staff hotkey")
-                    App.Notify("LakeviewVC", "Could not register staff hotkey: " staff)
+                    App.Notify("LakeviewVC", "Could not register staff hotkey: " staffHk)
                 }
             }
         }
