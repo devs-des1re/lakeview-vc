@@ -11,10 +11,12 @@ public APIs, and sends the appropriate chat command.
 
 - Offline OCR via [RapidOCR-json](https://github.com/hiroi-sora/RapidOCR-json)
   (no Python runtime required).
-- Mouse-anchored screen capture — point at a username, press one hotkey.
-- Roblox username resolution using the official public APIs (validate a typed
-  username, otherwise search and match the closest display name). Usernames are
-  always used, never display names.
+- Mouse-anchored screen capture — point at a username, press one hotkey. The
+  capture is upscaled (default 2x) before OCR, which sharply improves accuracy
+  on Roblox's small nametag text.
+- Reads the `@username` shown on Roblox nametags directly; falls back to the
+  official public APIs (validate, then search-and-match the display name) when
+  no `@` token is present. Usernames are always used, never display names.
 - Chat commands:
   - Normal: `;vc {username}`
   - Staff: `:log vc {username} {selection}`

@@ -66,6 +66,7 @@ class Pipeline {
 
         width := Config.GetInt("General", "CaptureWidth")
         height := Config.GetInt("General", "CaptureHeight")
+        scale := Config.GetInt("General", "CaptureScale")
         model := Config.Get("Settings", "Model")
 
         if !Models.IsInstalled(model)
@@ -76,22 +77,22 @@ class Pipeline {
 
         keep := Config.GetBool("Settings", "SaveCaptures")
         try {
-            Logger.Info(Format("Capture {1}x{2} at mouse for '{3}'.", width, height, context))
-            Capture.AtMouse(width, height, png)
+            Logger.Info(Format("Capture {1}x{2} (x{3}) at mouse for '{4}'.", width, height, scale, context))
+            Capture.AtMouse(width, height, png, scale)
 
-            text := Ocr.RecognizeText(png, model)
-            Logger.Info("OCR text: " (text != "" ? text : "<empty>"))
+            items := Ocr.Recognize(png, model)
+            Logger.Info("OCR items: " this.DescribeItems(items))
 
-            if (text = "")
+            if (items.Length = 0)
                 return ""
 
-            target := Resolver.Resolve(text)
+            target := Resolver.ResolveItems(items)
             if (target = "") {
-                Logger.Warn("Could not resolve OCR text: " text)
+                Logger.Warn("Could not resolve OCR items.")
                 return ""
             }
 
-            Logger.Info(Format("Resolved '{1}' -> {2} ({3}).", text, target.Name, target.Method))
+            Logger.Info(Format("Resolved -> {1} (display '{2}', method {3}).", target.Name, target.DisplayName, target.Method))
             return target.Name
         } finally {
             if (!keep) {
@@ -103,6 +104,20 @@ class Pipeline {
                 }
             }
         }
+    }
+
+    static DescribeItems(items) {
+        parts := []
+        for it in items
+            parts.Push("'" it.Text "'")
+        return parts.Length ? this.JoinStr(parts, ", ") : "<none>"
+    }
+
+    static JoinStr(parts, sep) {
+        out := ""
+        for i, p in parts
+            out .= (i > 1 ? sep : "") p
+        return out
     }
 }
 

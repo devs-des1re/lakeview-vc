@@ -72,8 +72,11 @@ class GuiApp {
         this.Ctl["CaptureWidth"] := g.Add("Edit", "xm+18 y+22 w70 Number", Config.Get("General", "CaptureWidth"))
         g.Add("Text", "x+m yp cWhite", " x ")
         this.Ctl["CaptureHeight"] := g.Add("Edit", "x+m yp w70 Number", Config.Get("General", "CaptureHeight"))
+        g.Add("Text", "x+m yp cWhite", " upscale x")
+        this.Ctl["CaptureScale"] := g.Add("Edit", "x+m yp w45 Number", Config.Get("General", "CaptureScale"))
+        g.Add("Text", "xm+18 y+4 cGray w400", "Upscaling the capture (2-3) greatly improves OCR of Roblox nametags.")
 
-        test := g.Add("Button", "xm+18 y+22 w120", "Test Capture")
+        test := g.Add("Button", "xm+18 y+18 w120", "Test Capture")
         test.OnEvent("Click", (*) => this.TestCapture())
 
         g.Add("Text", "xm+18 y+18 cGray w400", "Hold the mouse over a username in Roblox and press the hotkey.")
@@ -146,6 +149,7 @@ class GuiApp {
         this.Ctl["StaffHotkey"].Value := Config.Get("Staff", "StaffHotkey")
         this.Ctl["CaptureWidth"].Value := Config.Get("General", "CaptureWidth")
         this.Ctl["CaptureHeight"].Value := Config.Get("General", "CaptureHeight")
+        this.Ctl["CaptureScale"].Value := Config.Get("General", "CaptureScale")
         this.Ctl["StaffEnabled"].Value := Config.GetBool("Staff", "Enabled")
         this.Ctl["SaveCaptures"].Value := Config.GetBool("Settings", "SaveCaptures")
         this.Ctl["Logging"].Value := Config.GetBool("Settings", "Logging")
@@ -159,6 +163,7 @@ class GuiApp {
         Config.Set("General", "VcHotkey", this.NormalizeHotkey(this.Ctl["VcHotkey"].Value))
         Config.Set("General", "CaptureWidth", this.Positive(this.Ctl["CaptureWidth"].Value, 420))
         Config.Set("General", "CaptureHeight", this.Positive(this.Ctl["CaptureHeight"].Value, 110))
+        Config.Set("General", "CaptureScale", Max(1, Min(4, this.Positive(this.Ctl["CaptureScale"].Value, 2))))
 
         Config.Set("Staff", "Enabled", this.Ctl["StaffEnabled"].Value ? 1 : 0)
         Config.Set("Staff", "StaffHotkey", this.NormalizeHotkey(this.Ctl["StaffHotkey"].Value))
@@ -205,13 +210,26 @@ class GuiApp {
             model := Config.Get("Settings", "Model")
             width := Config.GetInt("General", "CaptureWidth")
             height := Config.GetInt("General", "CaptureHeight")
+            scale := Config.GetInt("General", "CaptureScale")
             Paths.EnsureDataDirs()
             png := Paths.CapturesDir "\test_" FormatTime(, "yyyyMMdd_HHmmss") ".png"
-            Capture.AtMouse(width, height, png)
-            text := Ocr.RecognizeText(png, model)
+            Capture.AtMouse(width, height, png, scale)
+            items := Ocr.Recognize(png, model)
             if !Config.GetBool("Settings", "SaveCaptures")
                 try FileDelete(png)
-            MsgBox (text = "" ? "No text detected." : "Detected:`n`n" text), "Test Capture", "Iconi"
+
+            if (items.Length = 0) {
+                MsgBox "No text detected.", "Test Capture", "Iconi"
+                return
+            }
+
+            raw := ""
+            for it in items
+                raw .= (raw = "" ? "" : ", ") "'" it.Text "'"
+
+            target := Resolver.ResolveItems(items)
+            result := (target = "") ? "No username resolved." : "Resolved username: " target.Name "`n(via " target.Method ")"
+            MsgBox "Detected: " raw "`n`n" result, "Test Capture", "Iconi"
         } catch as e {
             Logger.Exception(e, "TestCapture")
             MsgBox e.Message, "Test Capture failed", "Icon!"

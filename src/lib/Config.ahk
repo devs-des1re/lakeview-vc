@@ -10,7 +10,8 @@ class Config {
         "General", Map(
             "VcHotkey", "F8",
             "CaptureWidth", 420,
-            "CaptureHeight", 110
+            "CaptureHeight", 110,
+            "CaptureScale", 2
         ),
         "Staff", Map(
             "Enabled", 1,

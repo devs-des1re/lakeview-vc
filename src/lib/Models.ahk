@@ -35,8 +35,11 @@ class Models {
         fastRec := { Name: "en_PP-OCRv3_rec_infer.onnx", Sha: "ef7abd8bd3629ae57ea2c28b425c1bd258a871b93fd2fe7c433946ade9b5d9ea",
                      Url: "/PP-OCRv3/en_PP-OCRv3_rec_infer.onnx" }
 
-        accDet := { Name: "ch_PP-OCRv4_det_infer.onnx", Sha: "d2a7720d45a54257208b1e13e36a8479894cb74155a5efe29462512d42f49da9",
-                    Url: "/PP-OCRv4/ch_PP-OCRv4_det_infer.onnx" }
+        ; The v3 detector detects Roblox's small nametag text far more reliably
+        ; than the v4 detector, so both presets use it. Only the recogniser
+        ; differs: English (small) vs the v4 Chinese/English model (accurate).
+        accDet := { Name: "ch_PP-OCRv3_det_infer.onnx", Sha: "3439588c030faea393a54515f51e983d8e155b19a2e8aba7891934c1cf0de526",
+                    Url: "/PP-OCRv3/ch_PP-OCRv3_det_infer.onnx" }
         accRec := { Name: "ch_PP-OCRv4_rec_infer.onnx", Sha: "48fc40f24f6d2a207a2b1091d3437eb3cc3eb6b676dc3ef9c37384005483683b",
                     Url: "/PP-OCRv4/ch_PP-OCRv4_rec_infer.onnx" }
 
@@ -44,7 +47,7 @@ class Models {
             "fast", Models.Preset("fast", "Fast", "Lower CPU use, English-tuned recognition.",
                 fastDet, cls, fastRec, "dict_en.txt", "dict_en.txt",
                 [fastDet, cls, fastRec]),
-            "accurate", Models.Preset("accurate", "Accurate", "Best accuracy for usernames, Chinese PP-OCRv4 model.",
+            "accurate", Models.Preset("accurate", "Accurate", "Best accuracy for usernames (PP-OCRv4 recogniser).",
                 accDet, cls, accRec, "ppocr_keys_v1.txt", "dict_chinese.txt",
                 [accDet, cls, accRec])
         )

@@ -11,7 +11,7 @@ class Capture {
     static PngClsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
 
     ; Region is centred on the cursor. Returns the path of the saved PNG.
-    static AtMouse(width, height, savePath) {
+    static AtMouse(width, height, savePath, scale := 1) {
         CoordMode "Mouse", "Screen"
         MouseGetPos(&mx, &my)
 
@@ -30,21 +30,30 @@ class Capture {
         x := Max(bounds.X, Min(x, bounds.X + bounds.W - width))
         y := Max(bounds.Y, Min(y, bounds.Y + bounds.H - height))
 
-        return this.Region(x, y, width, height, savePath)
+        return this.Region(x, y, width, height, savePath, scale)
     }
 
-    ; Captures an absolute screen rectangle to a PNG file. Returns the path.
-    static Region(x, y, width, height, savePath) {
+    ; Captures an absolute screen rectangle to a PNG file. `scale` upscales the
+    ; capture (Roblox nametag text is small; upscaling sharply improves OCR).
+    ; Returns the path.
+    static Region(x, y, width, height, savePath, scale := 1) {
         this.GdipStartup()
+
+        scale := Max(1, Round(scale))
+        dw := width * scale
+        dh := height * scale
 
         hScreen := DllCall("GetDC", "ptr", 0, "ptr")
         hMem := DllCall("gdi32\CreateCompatibleDC", "ptr", hScreen, "ptr")
-        hBmp := DllCall("gdi32\CreateCompatibleBitmap", "ptr", hScreen, "int", width, "int", height, "ptr")
+        hBmp := DllCall("gdi32\CreateCompatibleBitmap", "ptr", hScreen, "int", dw, "int", dh, "ptr")
         old := DllCall("gdi32\SelectObject", "ptr", hMem, "ptr", hBmp, "ptr")
 
+        ; HALFTONE gives a smooth upscale (better for OCR than nearest-neighbour).
+        DllCall("gdi32\SetStretchBltMode", "ptr", hMem, "int", 4)
+
         ; SRCCOPY | CAPTUREBLT captures layered windows (e.g. some overlays).
-        DllCall("gdi32\BitBlt", "ptr", hMem, "int", 0, "int", 0, "int", width, "int", height
-            , "ptr", hScreen, "int", x, "int", y, "uint", 0x00CC0020 | 0x40000000)
+        DllCall("gdi32\StretchBlt", "ptr", hMem, "int", 0, "int", 0, "int", dw, "int", dh
+            , "ptr", hScreen, "int", x, "int", y, "int", width, "int", height, "uint", 0x00CC0020 | 0x40000000)
 
         DllCall("gdi32\SelectObject", "ptr", hMem, "ptr", old)
         DllCall("gdi32\DeleteDC", "ptr", hMem)
