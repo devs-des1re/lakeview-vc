@@ -49,11 +49,12 @@ class Ocr {
             text := item.Has("text") ? item["text"] : ""
             if (text = "")
                 continue
+            box := item.Has("box") ? item["box"] : []
             items.Push({
                 Text: text,
                 Score: item.Has("score") ? item["score"] : 0,
-                Box: item.Has("box") ? item["box"] : [],
-                Y: this.BoxTop(item)
+                Box: box,
+                Y: this.BoxTop(box)
             })
         }
         this.SortByY(items)
@@ -71,8 +72,7 @@ class Ocr {
         return this.Join(parts, " ")
     }
 
-    static BoxTop(item) {
-        box := item.Box
+    static BoxTop(box) {
         if (Type(box) = "Array" && box.Length >= 1 && Type(box[1]) = "Array" && box[1].Length >= 2)
             return box[1][2]
         return 0
