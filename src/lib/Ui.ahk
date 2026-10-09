@@ -29,13 +29,14 @@ class Ui {
             settings := { DllPath: WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll" }
         }
 
-        g := WebViewGui("+Resize -MaximizeBox", "LakeviewVC",, settings)
+        g := WebViewGui("+Resize -Caption", "LakeviewVC",, settings)
         this.Window := g
 
         g.AddCallbackToScript("GetState", (*) => this.GetStateJson())
         g.AddCallbackToScript("Save", (wv, payload) => this.OnSave(payload))
         g.AddCallbackToScript("OpenDataFolder", (*) => (Run(Paths.AppDataDir), "Opened."))
         g.AddCallbackToScript("ResetDefaults", (*) => this.OnReset())
+        g.AddCallbackToScript("CloseWindow", (*) => (this.Hide(), ""))
 
         g.OnEvent("Close", (*) => this.Hide())
 

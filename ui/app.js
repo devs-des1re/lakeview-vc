@@ -288,6 +288,21 @@ function setStatus(message, kind) {
     el.dataset.kind = kind || "";
 }
 
+function initTitleBar() {
+    const gui = (typeof ahk !== "undefined" && ahk.gui) ? ahk.gui : null;
+    if (!gui) return;
+
+    document.getElementById("win-min").addEventListener("click", () => gui.Minimize());
+    document.getElementById("win-max").addEventListener("click", () => {
+        if (document.body.classList.contains("ahk-maximized")) gui.Restore();
+        else gui.Maximize();
+    });
+    document.getElementById("win-close").addEventListener("click", () => {
+        if (typeof ahk.CloseWindow === "function") ahk.CloseWindow();
+        else gui.Hide();
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
@@ -353,6 +368,7 @@ async function boot() {
     initTabs();
     initHotkeyFields();
     initAbbr();
+    initTitleBar();
     initActions();
     try {
         render(await Bridge.getState());
