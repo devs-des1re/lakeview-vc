@@ -1,0 +1,12 @@
+* text=auto
+
+*.ahk  text eol=crlf
+*.ini  text eol=crlf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+*.exe binary
+*.png binary
+*.ico binary
+*.onnx binary

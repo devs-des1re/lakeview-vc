@@ -1,0 +1,19 @@
+# Build output
+dist/
+build/
+*.bak
+
+# Ahk2Exe output
+*.exe.z
+LakeviewVC.exe
+
+# Local runtime data (canonical copy lives in %APPDATA%\LakeviewVC)
+captures/
+logs/
+config.ini
+
+# OS / editor cruft
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
