@@ -25,8 +25,11 @@ class Ui {
     static Build() {
         settings := { DataDir: Paths.WebViewDataDir }
         if (A_IsCompiled) {
+            ; Extract the embedded WebView2 loader to a temp folder.
             WebViewCtrl.CreateFileFromResource((A_PtrSize * 8) "bit\WebView2Loader.dll", WebViewCtrl.TempDir)
             settings.DllPath := WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
+        } else {
+            settings.DllPath := Paths.LoaderFile
         }
 
         g := WebViewGui("+Resize -MaximizeBox -Caption", "LakeviewVC",, settings)
@@ -40,12 +43,11 @@ class Ui {
 
         g.OnEvent("Close", (*) => this.Hide())
 
-        if (A_IsCompiled) {
-            g.Navigate("index.html")
-        } else {
-            g.BrowseFolder(A_ScriptDir "\..\ui")
-            g.Navigate("index.html")
-        }
+        ; Compiled builds serve the UI from exe resources (WebViewToo calls
+        ; BrowseExe automatically); source runs load it from the ui\ folder.
+        if !A_IsCompiled
+            g.BrowseFolder(Paths.UiDir)
+        g.Navigate("index.html")
 
         g.Show("w820 h560")
         this.SetWindowIcon(g)
@@ -110,7 +112,7 @@ class Ui {
 
     static BuildDebug() {
         return {
-            version: "v0.1",
+            version: AppVersion,
             os: this.OsVersion(),
             ahk: A_AhkVersion,
             webview2: this.WebView2Version(),

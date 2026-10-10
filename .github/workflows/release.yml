@@ -1,0 +1,111 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Resolve checkout ref
+        id: ref
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            echo "Pre-release tag detected; taking code from dev."
+            echo "ref=dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "Stable tag detected; taking code from ${GITHUB_REF_NAME}."
+            echo "ref=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Derive version
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${TAG} (version ${VERSION})"
+
+      - name: Generate version file
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $lines = @(
+            ";@Ahk2Exe-SetVersion $version",
+            ";@Ahk2Exe-SetProductVersion $version",
+            "",
+            "global AppVersion := `"v$version`""
+          )
+          Set-Content -Path "src/version.ahk" -Value ($lines -join "`n") -Encoding utf8
+
+      - name: Install AutoHotkey v2
+        shell: pwsh
+        run: |
+          $url = "https://www.autohotkey.com/download/ahk-v2.exe"
+          $out = "$env:RUNNER_TEMP\ahk-setup.exe"
+          Invoke-WebRequest -Uri $url -OutFile $out
+          Start-Process -FilePath $out -ArgumentList "/S" -Wait
+
+      - name: Compile AutoHotkey script
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe",
+            "$env:LOCALAPPDATA\Programs\AutoHotkey\Compiler\Ahk2Exe.exe"
+          )
+          $compiler = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $compiler) { throw "Ahk2Exe.exe not found" }
+
+          $bases = @(
+            "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe",
+            "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe"
+          )
+          $base = $bases | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $base) { throw "AutoHotkey64.exe base not found" }
+
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $icon = Resolve-Path "icon.ico"
+          & $compiler /in "src\LakeviewVC.ahk" /out "dist\LakeviewVC.exe" /base "$base" /icon "$icon" /compress 0
+          if (-not (Test-Path "dist\LakeviewVC.exe")) { throw "Compilation failed" }
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found" }
+
+          & $iscc "/DAppVersion=${{ steps.version.outputs.version }}" "installer\lakeviewvc.iss"
+          $setup = Get-ChildItem "installer\Output\LakeviewVC-Setup-*.exe" | Select-Object -First 1
+          if (-not $setup) { throw "Installer build failed" }
+          Copy-Item $setup.FullName "dist\$($setup.Name)"
+          "INSTALLER=dist/$($setup.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Generate release log
+        id: releaselog
+        uses: devs-des1re/actions/releaselog@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" "${{ env.INSTALLER }}" --clobber

@@ -115,7 +115,7 @@ function initHotkeyFields() {
                 setHotkeyField(f, f.dataset.raw);
             });
             field.classList.add("is-capturing", "recording");
-            field.value = "Press a key…";
+            field.value = "Press a key...";
         });
     });
 
@@ -305,7 +305,7 @@ function initTitleBar() {
 
 function initActions() {
     document.getElementById("save").addEventListener("click", async () => {
-        setStatus("Saving…");
+        setStatus("Saving...");
         try {
             setStatus((await Bridge.save(collect())) || "Saved.", "ok");
         } catch (e) {

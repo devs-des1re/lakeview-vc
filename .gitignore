@@ -2,6 +2,7 @@
 dist/
 build/
 *.bak
+installer/Output/
 
 # Ahk2Exe output
 *.exe.z

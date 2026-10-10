@@ -10,6 +10,28 @@
 #SingleInstance Force
 Persistent
 
+;@Ahk2Exe-SetMainIcon %A_ScriptDir%\..\icon.ico
+;@Ahk2Exe-SetName LakeviewVC
+;@Ahk2Exe-SetDescription LakeviewVC
+;@Ahk2Exe-SetCompanyName LakeviewVC
+;@Ahk2Exe-SetCopyright Copyright (c) 2026 Arjun Patel
+
+; Embedded Web UI (served from exe resources when compiled). Resource names
+; must match the uppercased request path: "/fonts/x.ttf" -> "FONTS\X.TTF".
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\index.html, INDEX.HTML
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\style.css, STYLE.CSS
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\app.js, APP.JS
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\vcpicker.html, VCPICKER.HTML
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\vcpicker.js, VCPICKER.JS
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\icon.png, ICON.PNG
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\fonts\Outfit-Light.ttf, FONTS\OUTFIT-LIGHT.TTF
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\fonts\Outfit-Regular.ttf, FONTS\OUTFIT-REGULAR.TTF
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\fonts\Outfit-Medium.ttf, FONTS\OUTFIT-MEDIUM.TTF
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\fonts\Outfit-SemiBold.ttf, FONTS\OUTFIT-SEMIBOLD.TTF
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\ui\fonts\Outfit-Bold.ttf, FONTS\OUTFIT-BOLD.TTF
+;@Ahk2Exe-AddResource %A_ScriptDir%\..\vendor\webview\64bit\WebView2Loader.dll, 64bit\WebView2Loader.dll
+
+#Include %A_ScriptDir%\version.ahk
 #Include %A_ScriptDir%\lib\Paths.ahk
 #Include %A_ScriptDir%\..\vendor\JSON.ahk
 #Include %A_ScriptDir%\..\vendor\webview\WebViewToo.ahk

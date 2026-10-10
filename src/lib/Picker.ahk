@@ -20,11 +20,7 @@ class Picker {
         this.Result := ""
         this.Done := false
 
-        settings := { DataDir: Paths.WebViewPickerDataDir }
-        if (A_IsCompiled) {
-            WebViewCtrl.CreateFileFromResource((A_PtrSize * 8) "bit\WebView2Loader.dll", WebViewCtrl.TempDir)
-            settings.DllPath := WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
-        }
+        settings := { DataDir: Paths.WebViewPickerDataDir, DllPath: Paths.LoaderFile }
 
         g := WebViewGui("+AlwaysOnTop -Resize -Caption +ToolWindow", "Select VC",, settings)
         this.Window := g
@@ -32,12 +28,11 @@ class Picker {
         g.AddCallbackToScript("Choose", (wv, num) => this.Choose(num))
         g.AddCallbackToScript("Ready", (*) => this.PushItems())
 
-        if (A_IsCompiled)
-            g.Navigate("vcpicker.html")
-        else {
-            g.BrowseFolder(A_ScriptDir "\..\ui")
-            g.Navigate("vcpicker.html")
-        }
+        ; Compiled builds serve the UI from exe resources (WebViewToo calls
+        ; BrowseExe automatically); source runs load it from the ui\ folder.
+        if !A_IsCompiled
+            g.BrowseFolder(Paths.UiDir)
+        g.Navigate("vcpicker.html")
 
         height := 112 + (Min(abbrs.Length, 9) * 38)
         g.Show(Format("w280 h{}", height))
