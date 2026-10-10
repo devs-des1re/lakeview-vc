@@ -57,7 +57,6 @@ jobs:
         with:
           in: src\LakeviewVC.ahk
           out: dist\LakeviewVC.exe
-          icon: icon.ico
           target: x64
           compression: none
           ahk-tag: v2.0.30
