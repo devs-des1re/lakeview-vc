@@ -1,73 +1,203 @@
 ; ---------------------------------------------------------------------------
 ; Resolver.ahk - turns OCR results into a real Roblox username.
 ;
-; Roblox nametags show the display name on top and "@username" below, so when
-; an "@username" token is present it is used directly (it *is* the username).
-; Otherwise the display name is looked up through the public Roblox API.
+; Every recognised text box is treated as a candidate username (plus each
+; visual line, since a username can split across boxes). If any box carries an
+; "@username" token it is used directly (it *is* the username). Otherwise all
+; candidates are validated against the Roblox API and the one nearest the
+; capture centre wins - so chat text sharing the capture does not mislead it.
 ; ---------------------------------------------------------------------------
 
 class Resolver {
     ; An "@username" found anywhere in an OCR box (Roblox nametags show it below
     ; the display name). Not anchored so "Adam @Hayaante23" also matches.
     static AtPattern := "i)@([A-Za-z0-9_]{3,20})"
-    static TokenPattern := "i)([A-Za-z0-9_]{3,20})"
+    static MaxNames := 100
 
     ; Resolves from the OCR item list. `items` elements have Text/Box/Y.
-    ; Returns { Name, DisplayName, Id, Method } or "" when nothing is found.
+    ; Strategy: gather every candidate username from every box (and per line),
+    ; then decide which is the real username - an "@username" wins outright,
+    ; otherwise all candidates are validated against Roblox and the nearest
+    ; real username is used. Returns { Name, DisplayName, Id, Method } or "".
     static ResolveItems(items) {
         if (items.Length = 0)
             return ""
 
         center := this.Center(items)
-        cands := []
+
+        candMap := Map()   ; lowercased name -> { Name, Dist, Box }
         atCands := []
 
+        ; Per-box candidates.
         for it in items {
-            text := StrReplace(it.Text, " ")
             box := this.BoxExtent(it.Box)
             if (box = "")
                 continue
+            d := this.DistToCenter(box, center)
 
-            isAt := false
-            name := ""
-            if RegExMatch(text, this.AtPattern, &m) {
-                name := m[1]
-                isAt := true
-            } else if RegExMatch(text, this.TokenPattern, &m) {
-                name := m[1]
-            } else {
-                continue
-            }
+            if RegExMatch(it.Text, this.AtPattern, &m)
+                atCands.Push({ Name: m[1], Dist: d, Box: box })
 
-            dx := Max(box.x0 - center.x, 0, center.x - box.x1)
-            dy := Max(box.y0 - center.y, 0, center.y - box.y1)
-            c := { Name: name, IsAt: isAt, Dist: Sqrt(dx * dx + dy * dy), Box: box }
-            cands.Push(c)
-            if (isAt)
-                atCands.Push(c)
+            for cand in this.TextCandidates(it.Text)
+                this.AddCandidate(candMap, cand, d, box)
         }
 
-        ; Prefer an "@username": it is the real username and is unique, so it is
-        ; unaffected by chat text or display names sharing the capture. Pick the
-        ; one nearest the capture centre (the nametag under the cursor).
+        ; Same-line joined candidates (a username can split across boxes).
+        for line in this.LineGroups(items) {
+            text := ""
+            for it in line.Items
+                text .= (text = "" ? "" : " ") it.Text
+            d := this.DistToCenter(line.Box, center)
+            for cand in this.TextCandidates(text)
+                this.AddCandidate(candMap, cand, d, line.Box)
+        }
+
+        ; 1. An "@username" is the real username and is unique - use it.
         if (atCands.Length > 0) {
-            bestAt := atCands[1]
+            best := atCands[1]
             for c in atCands
-                if (c.Dist < bestAt.Dist)
-                    bestAt := c
-            return { Name: bestAt.Name, DisplayName: "", Id: 0, Method: "nametag" }
+                if (c.Dist < best.Dist)
+                    best := c
+            return { Name: best.Name, DisplayName: "", Id: 0, Method: "nametag" }
         }
 
-        if (cands.Length = 0)
+        ; 2. Validate every candidate; the nearest real username wins. This is
+        ;    robust against chat text sharing the capture.
+        valid := this.ValidateCandidates(candMap)
+        if (valid != "")
+            return valid
+
+        ; 3. Nothing validated: search by the nearest candidate's text.
+        nearest := ""
+        for key, c in candMap
+            if (nearest = "" || c.Dist < nearest.Dist)
+                nearest := c
+        if (nearest = "")
+            return ""
+        return this.Resolve(nearest.Name)
+    }
+
+    ; Candidate usernames from a piece of OCR text: the whole text, space ->
+    ; underscore / no-space variants, and each token.
+    static TextCandidates(text) {
+        out := []
+        clean := this.Clean(text)
+        if (clean = "")
+            return out
+        this.AddTextCandidate(out, clean)
+        this.AddTextCandidate(out, StrReplace(clean, " ", "_"))
+        this.AddTextCandidate(out, StrReplace(clean, " ", ""))
+        for tok in StrSplit(clean, " ")
+            this.AddTextCandidate(out, tok)
+        return out
+    }
+
+    static AddTextCandidate(list, value) {
+        if this.IsValidUsername(value)
+            this.PushUnique(list, value)
+    }
+
+    static IsValidUsername(value) {
+        return (value != "" && RegExMatch(value, "i)^[A-Za-z0-9_]{3,20}$") > 0)
+    }
+
+    static AddCandidate(map, name, dist, box) {
+        key := StrLower(name)
+        if (!map.Has(key) || dist < map[key].Dist)
+            map[key] := { Name: name, Dist: dist, Box: box }
+    }
+
+    static DistToCenter(box, center) {
+        dx := Max(box.x0 - center.x, 0, center.x - box.x1)
+        dy := Max(box.y0 - center.y, 0, center.y - box.y1)
+        return Sqrt(dx * dx + dy * dy)
+    }
+
+    ; Groups OCR items into visual lines by vertical overlap, ordered left to
+    ; right. Returns an array of { Items, Box }.
+    static LineGroups(items) {
+        lines := []
+        for it in items {
+            box := this.BoxExtent(it.Box)
+            if (box = "")
+                continue
+            placed := false
+            for line in lines {
+                lb := line.Box
+                overlap := Min(lb.y1, box.y1) - Max(lb.y0, box.y0)
+                minH := Min(lb.y1 - lb.y0, box.y1 - box.y0)
+                if (minH > 0 && overlap > 0.5 * minH) {
+                    line.Items.Push(it)
+                    line.Box := this.UnionBox(lb, box)
+                    placed := true
+                    break
+                }
+            }
+            if !placed
+                lines.Push({ Items: [it], Box: box })
+        }
+        ; Order items within each line left to right.
+        for line in lines
+            this.SortByX(line.Items)
+        return lines
+    }
+
+    static UnionBox(a, b) {
+        return { x0: Min(a.x0, b.x0), y0: Min(a.y0, b.y0)
+               , x1: Max(a.x1, b.x1), y1: Max(a.y1, b.y1) }
+    }
+
+    static SortByX(items) {
+        n := items.Length
+        Loop n - 1 {
+            i := A_Index
+            Loop n - i {
+                j := A_Index
+                bj := this.BoxExtent(items[j].Box)
+                bj1 := this.BoxExtent(items[j + 1].Box)
+                if (bj != "" && bj1 != "" && bj.x0 > bj1.x0) {
+                    tmp := items[j]
+                    items[j] := items[j + 1]
+                    items[j + 1] := tmp
+                }
+            }
+        }
+    }
+
+    ; Validates all candidates with the Roblox API and returns the nearest one
+    ; that is a real username, or "".
+    static ValidateCandidates(candMap) {
+        if (candMap.Count = 0)
             return ""
 
-        ; No @token anywhere: choose the nearest token (the display name) and
-        ; resolve it through the API.
-        best := cands[1]
-        for c in cands
-            if (c.Dist < best.Dist)
-                best := c
-        return this.Resolve(best.Name)
+        names := []
+        for key, c in candMap {
+            names.Push(c.Name)
+            if (names.Length >= this.MaxNames)
+                break
+        }
+
+        try
+            found := RobloxApi.ValidateUsernames(names)
+        catch as e {
+            Logger.Exception(e, "ValidateUsernames")
+            return ""
+        }
+        if (found.Count = 0)
+            return ""
+
+        best := ""
+        for key, c in candMap {
+            if found.Has(key) {
+                if (best = "" || c.Dist < best.Dist) {
+                    f := found[key]
+                    best := { Name: f.Name, DisplayName: f.DisplayName, Id: f.Id, Dist: c.Dist }
+                }
+            }
+        }
+        if (best = "")
+            return ""
+        return { Name: best.Name, DisplayName: best.DisplayName, Id: best.Id, Method: "validated" }
     }
 
     ; Returns { Name, DisplayName, Id, Method } or "" when nothing is found.
