@@ -52,35 +52,17 @@ jobs:
           )
           Set-Content -Path "src/version.ahk" -Value ($lines -join "`n") -Encoding utf8
 
-      - name: Install AutoHotkey v2
-        shell: pwsh
-        run: |
-          $url = "https://www.autohotkey.com/download/ahk-v2.exe"
-          $out = "$env:RUNNER_TEMP\ahk-setup.exe"
-          Invoke-WebRequest -Uri $url -OutFile $out
-          Start-Process -FilePath $out -ArgumentList "/S" -Wait
-
-      - name: Compile AutoHotkey script
-        shell: pwsh
-        run: |
-          $candidates = @(
-            "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe",
-            "$env:LOCALAPPDATA\Programs\AutoHotkey\Compiler\Ahk2Exe.exe"
-          )
-          $compiler = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $compiler) { throw "Ahk2Exe.exe not found" }
-
-          $bases = @(
-            "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe",
-            "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe"
-          )
-          $base = $bases | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $base) { throw "AutoHotkey64.exe base not found" }
-
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $icon = Resolve-Path "icon.ico"
-          & $compiler /in "src\LakeviewVC.ahk" /out "dist\LakeviewVC.exe" /base "$base" /icon "$icon" /compress 0
-          if (-not (Test-Path "dist\LakeviewVC.exe")) { throw "Compilation failed" }
+      - name: Compile app
+        uses: benmusson/ahk2exe-action@v1
+        with:
+          in: src\LakeviewVC.ahk
+          out: dist\LakeviewVC.exe
+          icon: icon.ico
+          target: x64
+          compression: none
+          ahk-tag: v2.0.30
+          ahk2exe-tag: Ahk2Exe1.1.37.02a2
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build installer
         shell: pwsh
