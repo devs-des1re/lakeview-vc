@@ -43,7 +43,7 @@ class Picker {
         g.Show(Format("w280 h{}", height))
         this.CenterWindow(g.Hwnd)
         this.SetWindowIcon(g)
-        try WinActivate("ahk_id " g.Hwnd)
+        this.FocusWindow(g)
 
         ; Wait for the choice. Sleep pumps the message queue, so WebView2
         ; callbacks (Choose/Ready) are still delivered meanwhile.
@@ -54,6 +54,16 @@ class Picker {
         try g.Destroy()
         this.Window := ""
         return this.Result
+    }
+
+    ; Brings the popup and its embedded browser to the foreground so keyboard
+    ; input (1-9 / Esc) reaches the page.
+    static FocusWindow(g) {
+        try WinActivate("ahk_id " g.Hwnd)
+        if (WinWaitActive("ahk_id " g.Hwnd, , 1)) {
+            try DllCall("SetFocus", "ptr", g.Control.Hwnd)
+            try g.Control.MoveFocus(0)  ; COREWEBVIEW2_MOVE_FOCUS_REASON.PROGRAMMATIC
+        }
     }
 
     static Choose(num) {

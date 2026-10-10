@@ -78,4 +78,11 @@ if (window.chrome && window.chrome.webview) {
 document.addEventListener("DOMContentLoaded", () => {
     render();
     ready();
+    // Make sure keyboard events reach this document.
+    try {
+        window.focus();
+    } catch {
+        /* ignore */
+    }
+    document.body.focus();
 });
