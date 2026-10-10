@@ -217,3 +217,6 @@ Tray.ClickCount := 1  ; single left-click opens the GUI
 
 if !Paths.EngineExe
     App.Notify("LakeviewVC", "OCR engine not found under engines\RapidOCR-json.")
+
+; Show the UI on launch; the user can minimize it to the tray from there.
+App.OpenGui()
