@@ -99,7 +99,7 @@ jobs:
 
       - name: Generate release log
         id: releaselog
-        uses: devs-des1re/actions/releaselog@v1
+        uses: devs-des1re/actions/releaselog@v0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
