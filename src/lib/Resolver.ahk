@@ -7,7 +7,9 @@
 ; ---------------------------------------------------------------------------
 
 class Resolver {
-    static UsernamePattern := "i)^@([A-Za-z0-9_]{3,20})$"
+    ; An "@username" found anywhere in an OCR box (Roblox nametags show it below
+    ; the display name). Not anchored so "Adam @Hayaante23" also matches.
+    static AtPattern := "i)@([A-Za-z0-9_]{3,20})"
     static TokenPattern := "i)([A-Za-z0-9_]{3,20})"
 
     ; Resolves from the OCR item list. `items` elements have Text/Box/Y.
@@ -18,6 +20,7 @@ class Resolver {
 
         center := this.Center(items)
         cands := []
+        atCands := []
 
         for it in items {
             text := StrReplace(it.Text, " ")
@@ -27,7 +30,7 @@ class Resolver {
 
             isAt := false
             name := ""
-            if RegExMatch(text, this.UsernamePattern, &m) {
+            if RegExMatch(text, this.AtPattern, &m) {
                 name := m[1]
                 isAt := true
             } else if RegExMatch(text, this.TokenPattern, &m) {
@@ -38,31 +41,32 @@ class Resolver {
 
             dx := Max(box.x0 - center.x, 0, center.x - box.x1)
             dy := Max(box.y0 - center.y, 0, center.y - box.y1)
-            cands.Push({ Name: name, IsAt: isAt, Dist: Sqrt(dx * dx + dy * dy), Box: box })
+            c := { Name: name, IsAt: isAt, Dist: Sqrt(dx * dx + dy * dy), Box: box }
+            cands.Push(c)
+            if (isAt)
+                atCands.Push(c)
+        }
+
+        ; Prefer an "@username": it is the real username and is unique, so it is
+        ; unaffected by chat text or display names sharing the capture. Pick the
+        ; one nearest the capture centre (the nametag under the cursor).
+        if (atCands.Length > 0) {
+            bestAt := atCands[1]
+            for c in atCands
+                if (c.Dist < bestAt.Dist)
+                    bestAt := c
+            return { Name: bestAt.Name, DisplayName: "", Id: 0, Method: "nametag" }
         }
 
         if (cands.Length = 0)
             return ""
 
+        ; No @token anywhere: choose the nearest token (the display name) and
+        ; resolve it through the API.
         best := cands[1]
         for c in cands
             if (c.Dist < best.Dist)
                 best := c
-
-        ; An "@username" token is the real username - use it directly.
-        if best.IsAt
-            return { Name: best.Name, DisplayName: "", Id: 0, Method: "nametag" }
-
-        ; Otherwise, prefer an @token on the same line (left/right of the label).
-        h := best.Box.y1 - best.Box.y0
-        for c in cands {
-            if (c.IsAt
-                && c.Box.x0 < best.Box.x1 && c.Box.x1 > best.Box.x0
-                && Abs(c.Box.y0 - best.Box.y1) < 1.5 * h)
-                return { Name: c.Name, DisplayName: best.Name, Id: 0, Method: "nametag-line" }
-        }
-
-        ; No @token: resolve the display name through the API.
         return this.Resolve(best.Name)
     }
 
