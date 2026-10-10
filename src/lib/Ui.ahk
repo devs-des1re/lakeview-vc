@@ -29,7 +29,7 @@ class Ui {
             settings.DllPath := WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
         }
 
-        g := WebViewGui("+Resize -Caption", "LakeviewVC",, settings)
+        g := WebViewGui("+Resize -MaximizeBox -Caption", "LakeviewVC",, settings)
         this.Window := g
 
         g.AddCallbackToScript("GetState", (*) => this.GetStateJson())

@@ -124,10 +124,6 @@ body {
 .tb-btn:hover { background: var(--elev); color: var(--text); }
 .tb-close:hover { background: var(--text); color: var(--bg); }
 
-.tb-ico-restore { display: none; }
-body.ahk-maximized .tb-ico-max { display: none; }
-body.ahk-maximized .tb-ico-restore { display: block; }
-
 .app {
     display: grid;
     grid-template-columns: 200px 1fr;

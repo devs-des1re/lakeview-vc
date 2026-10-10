@@ -293,10 +293,6 @@ function initTitleBar() {
     if (!gui) return;
 
     document.getElementById("win-min").addEventListener("click", () => gui.Minimize());
-    document.getElementById("win-max").addEventListener("click", () => {
-        if (document.body.classList.contains("ahk-maximized")) gui.Restore();
-        else gui.Maximize();
-    });
     document.getElementById("win-close").addEventListener("click", () => {
         if (typeof ahk.CloseWindow === "function") ahk.CloseWindow();
         else gui.Hide();
