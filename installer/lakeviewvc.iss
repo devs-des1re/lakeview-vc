@@ -4,8 +4,9 @@
 ; Build with:  ISCC.exe /DAppVersion=0.2.0 lakeviewvc.iss
 ; Expects the compiled exe at ..\dist\LakeviewVC.exe.
 ;
-; Per-machine install. Ships the exe, icon, ui\ folder, WebView2 loader and the
-; OCR engine + dictionaries. OCR models download at runtime into %APPDATA%.
+; Per-machine install. Ships the compiled exe (UI is embedded as resources),
+; the icon, the WebView2 loader and the OCR engine + dictionaries. OCR models
+; download at runtime into %APPDATA%.
 ; ---------------------------------------------------------------------------
 
 #ifndef AppVersion
@@ -33,6 +34,7 @@ OutputBaseFilename=LakeviewVC-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+WizardSmallImageFile=wizard-small.png
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
