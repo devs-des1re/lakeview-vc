@@ -16,6 +16,11 @@ class Paths {
 
     static IconFile   := Paths.FindIcon()
 
+    ; WebView2 user-data folders. Each WebView window in a process needs its
+    ; own folder, so the main window and the picker popup use separate ones.
+    static WebViewDataDir       := Paths.AppDataDir "\webview"
+    static WebViewPickerDataDir := Paths.AppDataDir "\webview-picker"
+
     ; Hugging Face mirror of the PaddleOCR/RapidOCR model files. SHA-256 of the
     ; det/v4-rec/cls files was verified to match the official RapidOCR-json release.
     static ModelsBaseUrl := "https://huggingface.co/SWHL/RapidOCR/resolve/main"
@@ -44,7 +49,9 @@ class Paths {
     }
 
     static EnsureDataDirs() {
-        for dir in [this.AppDataDir, this.ModelsRoot, this.LogsDir, this.CapturesDir] {
+        dirs := [this.AppDataDir, this.ModelsRoot, this.LogsDir, this.CapturesDir
+               , this.WebViewDataDir, this.WebViewPickerDataDir]
+        for dir in dirs {
             if !DirExist(dir)
                 DirCreate(dir)
         }

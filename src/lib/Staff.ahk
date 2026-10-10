@@ -32,13 +32,12 @@ class Staff {
             return
         }
 
-        key := this.PromptForKey(abbrs)
-        if (key = "") {
+        selection := this.PromptForKey(abbrs)
+        if (selection = "") {
             Logger.Info("Staff VC selection cancelled.")
             return
         }
 
-        selection := this.AbbrFor(key)
         command := ":log vc " username " " selection
         Logger.Action("Sending: " command)
         try {
@@ -50,35 +49,20 @@ class Staff {
         }
     }
 
-    static AbbrFor(key) {
-        return Config.GetAbbr(key + 0)
-    }
-
-    ; Shows a small always-on-top prompt and waits for a single 1-9 keypress.
-    ; Returns the pressed key as a string, or "" if cancelled/timed out.
+    ; Shows the picker and returns the chosen abbreviation, or "" if cancelled.
     static PromptForKey(abbrs) {
-        prompt := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox", "Select VC")
-        prompt.SetFont("s10", "Segoe UI")
-        prompt.MarginX := 16
-        prompt.MarginY := 12
-
-        lines := ""
+        keys := []
         for a in abbrs
-            lines .= a.Key ". " a.Abbr "`n"
-        prompt.BackColor := 0x1E1E1E
-        prompt.Add("Text", "cWhite", "Press a number to log the VC:`n`n" RTrim(lines, "`n"))
-        prompt.Add("Text", "cGray", "Esc to cancel.")
-        prompt.Show()
-        WinActivate("Select VC")
-
-        ; End on a digit or Escape; the pressed key is stored in EndKey.
-        ih := InputHook("T10", "123456789{Esc}")
-        ih.Start()
-        ih.Wait()
-        try prompt.Destroy()
-
-        if (ih.EndKey ~= "^[1-9]$")
-            return ih.EndKey
-        return ""
+            keys.Push(a.Abbr)
+        try {
+            pos := Picker.Show(keys)
+        } catch as e {
+            Logger.Exception(e, "Picker.Show")
+            App.Notify("LakeviewVC", "Could not open the VC picker.")
+            return ""
+        }
+        if (pos = "" || pos < 1 || pos > abbrs.Length)
+            return ""
+        return abbrs[pos].Abbr
     }
 }

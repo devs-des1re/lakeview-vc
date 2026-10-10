@@ -23,10 +23,10 @@ class Ui {
     }
 
     static Build() {
-        settings := {}
+        settings := { DataDir: Paths.WebViewDataDir }
         if (A_IsCompiled) {
             WebViewCtrl.CreateFileFromResource((A_PtrSize * 8) "bit\WebView2Loader.dll", WebViewCtrl.TempDir)
-            settings := { DllPath: WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll" }
+            settings.DllPath := WebViewCtrl.TempDir "\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
         }
 
         g := WebViewGui("+Resize -Caption", "LakeviewVC",, settings)

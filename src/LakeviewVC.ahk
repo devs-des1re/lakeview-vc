@@ -21,6 +21,7 @@ Persistent
 #Include %A_ScriptDir%\lib\RobloxApi.ahk
 #Include %A_ScriptDir%\lib\Resolver.ahk
 #Include %A_ScriptDir%\lib\RobloxWindow.ahk
+#Include %A_ScriptDir%\lib\Picker.ahk
 #Include %A_ScriptDir%\lib\Staff.ahk
 #Include %A_ScriptDir%\lib\Ui.ahk
 

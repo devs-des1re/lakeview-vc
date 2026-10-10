@@ -20,8 +20,9 @@ public APIs, and sends the appropriate chat command.
 - Chat commands:
   - Normal: `;vc {username}`
   - Staff: `:log vc {username} {selection}`
-- Dark HTML UI (AutoHotkey + WebView2) for hotkeys, capture size, model choice,
-  staff abbreviations and settings.
+- Dark HTML UI (AutoHotkey + WebView2) for hotkeys, model choice, staff
+  abbreviations and settings, plus a matching "Select VC" popup for the staff
+  hotkey.
 - Minimizes to the system tray; tray left-click reopens, right-click offers
   _Open GUI_ and _Close App_.
 - Configuration and logs saved to `%APPDATA%\LakeviewVC`.
