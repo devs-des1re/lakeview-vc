@@ -175,7 +175,9 @@ class Hotkeys {
 ; --- small app helpers -------------------------------------------------------
 class App {
     static Notify(title, message) {
-        TrayTip(message, title, 0x1)
+        ; Option 4 = use the tray icon as the toast logo, so notifications show
+        ; the app icon (with the AUMID providing the app name).
+        TrayTip(message, title, 4)
     }
 
     static SetStatus(text) {
@@ -193,9 +195,29 @@ class App {
     }
 }
 
+; --- shell identity ----------------------------------------------------------
+; Windows shows the AppUserModelID's display name and icon on toast
+; notifications. Without this they default to "AutoHotkey" and its icon.
+class Shell {
+    static AppId := "LakeviewVC"
+
+    static RegisterIdentity() {
+        key := "HKCU\SOFTWARE\Classes\AppUserModelId\" this.AppId
+        try {
+            RegWrite(this.AppId, "REG_SZ", key, "DisplayName")
+            if (Paths.IconFile != "" && FileExist(Paths.IconFile))
+                RegWrite(Paths.IconFile, "REG_SZ", key, "IconUri")
+        } catch {
+            ; Registry write is best-effort; notifications still work.
+        }
+        try DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "wstr", this.AppId)
+    }
+}
+
 ; --- startup -----------------------------------------------------------------
 Paths.EnsureDataDirs()
 Config.Load()
+Shell.RegisterIdentity()
 Logger.Enabled := Config.GetBool("Settings", "Logging")
 Logger.Info("LakeviewVC started.")
 Logger.Info("Engine: " (Paths.EngineExe != "" ? Paths.EngineExe : "<not found>"))

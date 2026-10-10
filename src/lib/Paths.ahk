@@ -26,12 +26,18 @@ class Paths {
     static ModelsBaseUrl := "https://huggingface.co/SWHL/RapidOCR/resolve/main"
 
     ; Locate icon.ico whether running from source (src/lib) or an installed exe.
+    ; Returns a normalized absolute path (no "..") since Windows' toast icon
+    ; resolver rejects unnormalized paths.
     static FindIcon() {
         rels := ["\icon.ico", "\..\icon.ico", "\..\..\icon.ico"]
         for rel in rels {
             f := A_ScriptDir rel
-            if FileExist(f)
+            if FileExist(f) {
+                buf := Buffer(520, 0)
+                if DllCall("GetFullPathNameW", "Str", f, "UInt", 260, "Ptr", buf, "Ptr", 0, "UInt")
+                    return StrGet(buf)
                 return f
+            }
         }
         return ""
     }
